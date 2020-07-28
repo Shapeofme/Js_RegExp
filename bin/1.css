@@ -1,0 +1,22 @@
+body{
+    padding: 0px;
+    margin: 0px;
+}
+.c1{
+    font-size: 30px;
+    color: aqua;
+    border: 2px dotted black;
+    margin-top: 6px;
+}
+.c2{
+    font-size: 30px;
+    color: aquamarine;
+    border: 2px dotted rgb(78, 70, 184);
+    margin-top: 6px;
+}
+.c3{
+    font-size: 30px;
+    color: rgb(59, 187, 70);
+    border: 2px dotted rgb(180, 77, 77);
+    margin-top: 6px;
+}
