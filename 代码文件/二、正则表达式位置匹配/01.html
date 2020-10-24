@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正则表达式位置匹配</title>
+</head>
+
+<body>
+    <!-- 01什么是位置？ -->
+    <script>
+        //"↑a↑b↑c↑d↑" 箭头标识所在的位置
+    </script>
+
+    <!-- 02如何匹配位置 -->
+    <script>
+        /* 
+            1.在 ES5 中，共有 6 个锚：^、$、\b、\B、(?=p)、(?!p)
+            2.^与$
+                -> ^（脱字符）匹配开头，在多行匹配中匹配行开头。
+                -> $（美元符号）匹配结尾，在多行匹配中匹配行结尾。
+                ->多行匹配模式（即有修饰符 m）时，每行都匹配始末位置
+            3.\b与\B
+                -> \b：\w与\W之间的位置，\w与^之间的位置，\w与$之间的位置
+                -> |B: （取反，类似于补集）\w与\w，\W与\W，^与 \W，\W与$之间的位置
+            4.(?=p) 和 (?!p)
+                ->p是一个子模式，正则表达式是匹配模式，要么匹配字符，要么匹配位置
+                ->(?=p) 该位置后面的字符要匹配p    (p前面的位置，或者说，该位置后面的字符要匹配p。)
+                ->(?!p) （取反，类似于补集）不匹配p前面的位置（相邻）
+                ->(?<=p) p的右边位置
+                ->(?<!p) （取反。。。）
+            补充：replace方法
+         */
+        //测试
+        console.log("匹配位置测试：");
+        //^与$
+        var result = "hello".replace(/^|$/g, "#");
+        console.log(result); //"#hello#"
+        var result = "hello\nre0\nceshi".replace(/^|$/gm, "#");
+        console.log(result); //#hello#\n#re0#\n#ceshi#
+        //\b与\B
+        var result = "[JS] Lesson_01.mp4".replace(/\b/g, "#");
+        console.log(result); //[#JS#] #Lesson_01#.#mp4#
+        var result = "[JS] Lesson_01.mp4".replace(/\B/g, "#");
+        console.log(result); //#[J#S]# L#e#s#s#o#n#_#0#1.m#p#4
+        //(?=p)和(?!p)
+        var result = "hello".replace(/(?=l)/g, "#");
+        console.log(result); //he#l#lo
+        var result = "hello".replace(/(?!l)/g, "#");
+        console.log(result); //#h#ell#o#
+        //(?<=p) 和 (?<!p)
+        var result = "hello".replace(/(?<=l)/g, "#");
+        console.log(result); //hel#l#o
+        var result = "hello".replace(/(?<!l)/g, "#");
+        console.log(result); //#h#e#llo#
+    </script>
+
+    <!-- 03位置的特性 -->
+    <script>
+        /* 
+            ->对于位置的理解，我们可以理解成空字符 ""，字符之间的位置，可以写成多个。
+            ->"hello" = (""*n) + "h" + (""*n) + "e" + (""*n) + "l" + (""*n) + "l" + (""*n) + "o" + (""*n)
+                括号里的为可选内容
+            ->^hello$ 等价 ^^hello$$$ 等价 (?=he)^^he(?=\w)llo$\b\b$
+            ->(?=he)^^he(?=\w)llo$\b\b$的解析
+                -重点：字符之间的位置，可以写成多个
+                -"he"之前的位置，首位置，首位置 -- 匹配
+                -[0-9a-zA-Z]之前的位置,尾位置
+                -\b的解释：字符之间的位置，可以写成多个（存在疑问。。。）
+        */
+        console.log("位置特性:");
+        var result = /^^hello$$$/.test("hello" + "" + "" + "" + "" + "" + "");
+        console.log(result); //true
+        var result = /(?=he)^^he(?=\w)llo$\b\b$/.test("hello" + "" + "" + "" + "" + "" + "");
+        console.log(result); //true
+    </script>
+
+    <!-- 04案例分析 -->
+    <script>
+        /* 补充：test方法     
+         */
+        console.log("案例分析：");
+        /* 1.不匹配任何东西的正则 */
+        var reg = /.^/;
+        console.log(reg.test("hello"));
+
+        /* 2.数字的千位分隔符表示法
+            (?!^)(?=(\d{3})+$)/g 可以匹配到这些位置，但不可以匹配到这些位置
+            ->匹配其他形式
+            ->格式化
+         */
+        var str = "12345678";
+        var result = str.replace(/(?=\d{3}$)/g, ",");
+        console.log(result); //12345,678
+        var result = str.replace(/(?=(\d{3})+$)/g, ",");
+        console.log(result); //12,345,678
+        var result = (str += "9").replace(/(?=(\d{3})+$)/g, ",");
+        console.log(result); //,123,456,789
+        var result = str.replace(/(?!^)(?=(\d{3})+$)/g, ",");
+        console.log(result); //123,456,789
+        //匹配其他形式
+        str = "12345678 123456789";
+        var result = str.replace(/(?!\b)(?=(\d{3})+\b)/g, ",");
+        console.log(result); //12,345,678 123,456,789
+        str = "12345678 123456789";
+        var result = str.replace(/\B(?=(\d{3})+\b)/g, ",");
+        console.log(result); //12,345,678 123,456,789
+        //格式化
+        function format(num) {
+            return num.toFixed(2).replace(/(?!\b)(?=(\d{3})+\b)/g, ",").replace(/^/, "$$");
+        }
+        console.log(format(1888)); //$1,888.00
+
+        /* 3.验证密码 
+            ->（？=p） 这个位置后面的字符必须得是p模式
+            ->解法一：(?=p)
+                同时包含数字和小写字母（或）
+                同时包含数字和大写字母
+                同时包含小写字母和大写字母
+                同时包含数字、小写字母和大写字母（上面的条件满足了，这个也就满足了）
+            ->解法二：(?!p)
+                不能全部是数字，（且）不能全部是小写字母，不能全部是大写字母
+        */
+        console.log("解法一：");
+        var reg = /((?=.*[0-9])(?=.*[a-z])|(?=.*[0-9])(?=.*[A-Z])|(?=.*[a-z])(?=.*[A-Z]))^[0-9a-zA-Z]{6,12}$/;
+        console.log(reg.test(1234567)); // false
+        console.log(reg.test("abcdef")); // false 全是小写字母
+        console.log(reg.test("ABCDEFGH")); // false 全是大写字母
+        console.log(reg.test("ab23C")); // false 不足6位
+        console.log(reg.test("ABCDEF234")); // true 大写字母和数字
+        console.log(reg.test("abcdEF234")); // true 三者都有
+        console.log("解法二：");
+        var reg = /(?!^[0-9]{6,12}$)(?!^[a-z]{6,12}$)(?!^[A-Z]{6,12}$)^[0-9a-zA-Z]{6,12}$/;
+        console.log(reg.test(1234567)); // false
+        console.log(reg.test("abcdef")); // false 全是小写字母
+        console.log(reg.test("ABCDEFGH")); // false 全是大写字母
+        console.log(reg.test("ab23C")); // false 不足6位
+        console.log(reg.test("ABCDEF234")); // true 大写字母和数字
+        console.log(reg.test("abcdEF234")); // true 三者都有
+    </script>
+
+    <!-- 05方法补充 -->
+    <script>
+        /* 1.test方法：（正则对象方法,不受括号影响,会影响正则对象）
+            ->功能：执行一个检索，用来查看正则表达式与指定的字符串是否匹配。返回 true 或 false。
+            ->regexObj.test(str)
+            ->非全局正则：存在匹配项就返回true，否则返回false
+            ->全局正则：如果正则表达式设置了全局标志，test() 的执行会改变正则表达式lastIndex属性。连续的执行test()方法，后续的执行将会从lastIndex处开始匹配字符串，(exec() 同样改变正则本身的 lastIndex属性值).
+
+           2.replace方法：（字符串方法）
+            ->描述：replace() 方法返回一个由替换值（replacement）替换部分或所有的模式（pattern）匹配项后的新字符串。模式可以是一个字符串或者一个正则表达式，替换值可以是一个字符串或者一个每次匹配都要调用的回调函数。如果pattern是字符串，则仅替换第一个匹配项。原字符串不会改变。
+            ->返回值：返回一个由替换值（replacement）替换部分或所有的模式（pattern）匹配项后的新字符串（注：返回新字符串）
+            ->参数：模式，替换值
+                -模式：可以是一个字符串或者一个正则表达式
+                -替换值：一个字符串或者一个每次匹配都要调用的回调函数
+            ->替换值：
+                -字符串（可以插入特殊变量名）
+                    $$	插入一个 "$"。
+                    $&	插入匹配的子串。
+                    $`	插入当前匹配的子串左边的内容。
+                    $'	插入当前匹配的子串右边的内容。
+                    $n	假如第一个参数是 RegExp对象，并且 n 是个小于100的非负整数，那么插入第 n 个括号匹配的字符串。提示：索引是从1开始（见下）
+                -函数
+                    --描述：指定一个函数作为第二个参数。在这种情况下，当匹配执行后，该函数就会执行。 函数的返回值作为替换字符串。 (注意：上面提到的特殊替换参数在这里不能被使用。) 另外要注意的是，如果第一个参数是正则表达式，并且其为全局匹配模式，那么这个方法将被多次调用，每次匹配都会被调用。
+                    --特殊替换参数这里不可使用
+                    --全局匹配下会被多次调用
+                    --参数：
+                        match	匹配的子串
+                        p1,p2, ...  如果是用 /(\a+)(\b+)/ 这个来匹配，p1 就是匹配的 \a+，p2 就是匹配的 \b+
+                        offset  匹配到的子字符串在原字符串中的偏移量
+                        string  被匹配的原字符串
+                        NamedCaptureGroup	命名捕获组匹配的对象
+         */
+        //test
+        console.log("test方法测试：");
+        //非全局匹配
+        var reg = /(hel)/;
+        console.log(reg.test("hello")); //true
+        console.log(reg.test("hello")); //true
+        //全局匹配
+        var reg = /(hel)/g;
+        console.log(reg.test("hellohello")); //true
+        console.log(reg.lastIndex); //3
+        console.log(reg.test("hellohello")); //true
+        console.log(reg.lastIndex); //8
+        console.log(reg.test("hellohello")); //false
+        console.log(reg.lastIndex); //0
+
+        //replace
+        console.log("replace方法测试：");
+        //字符串作为参数（插入特殊变量名）
+        console.log("参数：字符串");
+        var str = "hello0123hello";
+        var result = str.replace(/hel/g, "#");
+        console.log(result); //#lo0123#lo
+        var result = str.replace("hel", "#");
+        console.log(result); //#lo0123hello
+        var result = str.replace(/hel/g, "$$");
+        console.log(result); //$lo0123$lo
+        var result = "helo".replace(/l/, "$`");
+        console.log(result); //he he(l) o 这里我给分开写了，便于理解
+        var result = "helo".replace(/l/, "$'");
+        console.log(result); //he o(l) o 这里我给分开写了，便于理解
+        var result = str.replace(/(he)ll(o)\d*/g, "$2,$1"); //必须匹配整个字符串
+        console.log(result); //o,heo,he
+
+        //函数作为参数
+        /* 
+            指定一个函数作为第二个参数。在这种情况下，当匹配执行后，该函数就会执行。 函数的返回值作为替换字符串。 (注意：上面提到的特殊替换参数在这里不能被使用。) 另外要注意的是，如果第一个参数是正则表达式，并且其为全局匹配模式，那么这个方法将被多次调用，每次匹配都会被调用。
+            ->特殊替换参数这里不可使用
+            ->全局匹配下会被多次调用
+            ->参数：
+                match	匹配的子串
+                p1,p2, ...  如果是用 /(\a+)(\b+)/ 这个来匹配，p1 就是匹配的 \a+，p2 就是匹配的 \b+
+                offset  匹配到的子字符串在原字符串中的偏移量
+                string  被匹配的原字符串
+                NamedCaptureGroup	命名捕获组匹配的对象
+         */
+        console.log("参数：函数");
+
+        function replacer(match, p1, p2, p3, offset, string) {
+            console.log(match);
+            console.log(p1 + "," + p2 + "," + p3);
+            console.log(offset);
+            console.log(string);
+            return [p1, p2, p3].join(' - ');
+            /*第一次调用：
+                abc12345#$*%
+                abc,12345,#$*%
+                0
+                abc12345#$*%
+              第二次调用：
+                空
+                ,,(即p1,p2,p3为空)
+                12（位置的个数）
+                abc12345#$*%
+             */
+        }
+        var newString = 'abc12345#$*%'.replace(/([^\d]*)(\d*)([^\w]*)/g, replacer);
+        // console.log(newString); // abc - 12345 - #$*%
+    </script>
+</body>
+
+</html>

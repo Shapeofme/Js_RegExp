@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正则表达式字符匹配</title>
+</head>
+
+<body>
+    <!-- 1.两种模糊匹配 -->
+    <script>
+        /* 总结：正则表达式是匹配模式，要么匹配字符，要么匹配位置
+            1.横向模糊匹配
+                ->描述：匹配某个字符的个数是不确定的
+                ->横向模糊指的是，一个正则可匹配的字符串的长度不是固定的，可以是多种情况的。
+                ->实现方式：量词，例：{m，n} 表示连续出现最少m次，最多n次
+                ->
+            2.纵向模糊匹配
+                ->描述：不一定匹配到哪个字符
+                ->纵向模糊指的是，一个正则匹配的字符串，具体到某一位字符时，它可以不是某个确定的字符，可以有多种可能。
+                ->实现方式：字符组，例：[abc] 表示匹配的字符可以是abc中任意一个
+         */
+
+        //精确匹配
+        console.log("精确匹配：");
+        var regex = /hello/;
+        console.log(regex.test("hello"));
+        //1.横向模糊匹配
+        /* 
+            1.其中 g 是正则的一个修饰符。表示全局匹配，即在目标字符串中按顺序找到满足匹配模式的所有子串
+         */
+        console.log("横向模糊匹配：");
+        var reg = /ab{2,5}c/g;
+        var str = "abc abbc abbbc abbbbc abbbbbc abbbbbbc";
+        console.log(reg.test(str)); //true
+        //2.纵向模糊匹配
+        /* 1.str.match() 方法：可在字符串内检索指定的值，或找到一个或多个正则表达式的匹配。
+                -字符串。。。
+                -正则 。。。
+        */
+        console.log("纵向模糊匹配");
+        var reg = /a[123]b/g;
+        var str = "a0b,a1b,a2b,a3b,a4b";
+        console.log(str.match(reg)); //[a1b,a2b,a3b]
+        //match方法 --- 字符串的方法（仅在非全局匹配下受括号的影响，不会影响正则对象）
+        /* 
+            --字符串
+                |--全局匹配g 不存在
+                |--非全局匹配 new RegExp(str);
+            --正则
+                |--全局匹配g 如果使用g标志，则将返回与完整正则表达式匹配的所有结果，但不会返回捕获组。
+                |--非全局匹配 如果未使用g标志，则仅返回第一个完整匹配及其相关的捕获组（Array）。 在这种情况下，返回的项目将具有如下所述的其他属性；(此时返回结果会受括号影响，与exec相同)
+                    -groups: 一个捕获组数组 或 undefined（如果没有定义命名捕获组）。
+                    -index: 匹配的结果的开始位置
+                    -input: 搜索的字符串.
+
+            非正常匹配：
+                -match空参：["", index: 0, input: "hhh", groups: undefined]
+                -匹配不到：null
+
+            捕获组：
+                -普通捕获组 ["", index: 0, input: "hhh", groups: undefined]
+                -命名捕获组 /(?<name>)+正则表达式/
+         */
+        console.log("match方法：");
+        //--字符串测试
+        var str = "hellohello";
+        var cs = "hel";
+        var rear = str.match(cs);
+        console.log(rear); //["hel", index: 0, input: "hellohello", groups: undefined]
+        console.log(rear.index); //0
+        var rear = str.match(cs);
+        console.log(rear); //["hel", index: 0, input: "hellohello", groups: undefined]
+        console.log(rear.index); //0
+        //--正则测试
+        //非全局匹配
+        var str = "hellohello";
+        var reg = /hel/; // 等价 var reg = new RegExp("hel");
+        // var reg = /(hel)/;//["hel","hel", index: 0, input: "hellohello", groups: undefined]
+        var rear = str.match(reg);
+        console.log(rear); //["hel", index: 0, input: "hellohello", groups: undefined]
+        console.log(rear.index); //0
+        var rear = str.match(reg);
+        console.log(rear); //["hel", index: 0, input: "hellohello", groups: undefined]
+        console.log(rear.index); //0
+        console.log(reg.lastIndex); //0
+        //全局匹配
+        var str = "hellohello";
+        var reg = /hel/g;
+        var rear = str.match(reg);
+        console.log(rear); //["hel", "hel"]
+        console.log(rear.index); //undefined
+        console.log(reg.lastIndex); //0
+        //--非正常匹配
+        console.log("非正常匹配：");
+        //match空参
+        var str = "hhh";
+        var reg = /hhh/;
+        console.log(str.match()); //["", index: 0, input: "hhh", groups: undefined]
+        //匹配不到
+        var str = "hhh";
+        var reg = /jjj/;
+        console.log(str.match(reg)); //null
+
+        //exec方法 --- 正则对象的方法(受括号的影响，会影响正则对象)
+        /* 
+            --匹配成功
+                -非全局匹配 ["hel", "hel",（匹配项） index: 0, input: "hellohello", groups: undefined]
+                -全局匹配 
+                   如果匹配成功，exec() 方法返回一个捕获数组，并更新正则表达式对象的 lastIndex 属性。完全匹配成功的文本将作为返回数组的第一项，从第二项起，后续每项都对应正则表达式内捕获括号里匹配成功的文本。
+
+                -有括号 ["hel", "hel",（匹配项） index: 0, input: "hellohello", groups: undefined] 匹配到全部
+                -无括号 ["hell", index: 0, input: "hellohello", groups: undefined] 匹配第一个
+                
+            --匹配失败 
+                -如果匹配失败，exec() 方法返回 null，并将 lastIndex 重置为 0 。
+
+            捕获数组的属性：["hel", "hel", index: 0, input: "hellohello", groups: undefined]
+                [0]	匹配的全部字符串	
+                [1], ...[n ]	括号中的分组捕获
+                index	匹配到的字符位于原始字符串的基于0的索引值
+                input	原始字符串
+
+            正则对象的属性：
+                lastIndex	下一次匹配开始的位置
+                ignoreCase	是否使用了 "i" 标记使正则匹配忽略大小写
+                global	是否使用了 "g" 标记来进行全局的匹配.
+                multiline   是否使用了 "m" 标记使正则工作在多行模式（也就是，^ 和 $ 可以匹配字符串中每一行的开始和结束（行是由 \n 或 \r 分割的），而不只是整个输入字符串的最开始和最末尾处。）
+                source	正则匹配的字符串
+         */
+        console.log("exec方法:");
+        //非全局
+        var str = "hellohello";
+        var reg = /(hel)/;
+        var rear = reg.exec(str);
+        console.log(rear); //["hel", "hel", index: 0, input: "hellohello", groups: undefined]
+        console.log(reg.lastIndex); //0
+        var rear = reg.exec(str);
+        console.log(rear); //["hel", "hel", index: 0, input: "hellohello", groups: undefined]
+        console.log(reg.lastIndex); //0
+        //全局
+        var str = "hellohello";
+        var reg = /(hel)/g;
+        var rear = reg.exec(str);
+        console.log(rear); // ["hel", "hel", index: 0, input: "hellohello", groups: undefined]
+        console.log(reg.lastIndex); //3
+        var rear = reg.exec(str);
+        console.log(rear); // ["hel", "hel", index: 5, input: "hellohello", groups: undefined]
+        console.log(reg.lastIndex); //8
+        var rear = reg.exec(str);
+        console.log(rear); //null
+        console.log(reg.lastIndex); //0
+        //无括号
+        var str = "hellohello";
+        var reg = /hel{1,}/g;
+        var rear = reg.exec(str);
+        console.log(rear); //["hell", index: 0, input: "hellohello", groups: undefined]
+        var rear = reg.exec(str);
+        console.log(rear); //["hell", index: 5, input: "hellohello", groups: undefined]
+        var rear = reg.exec(str);
+        console.log(rear); //null
+    </script>
+
+    <!-- 02字符组 -->
+    <script>
+        /* 
+            举例：[abc] a,b或c中的一种字符
+            1.范围表示法 
+                ->使用连字符"-"省略
+                ->[a-z] 等价于 a、b、c、d...x、y、z
+                ->匹配特殊字符：例如匹配“a”，“-”,“c” 
+                    要么放在开头结尾，要么转义 [a\-c] [\ac] [ac\]
+            2.排除字符组
+                ->排除a、b、c后的其他字符 [^abc]
+                ->符号：^ 脱字符
+            3.简写方式
+                -> \d 数字，|D 非数字
+                -> \w 数字、大小写字母、下划线 ，|W相反
+                -> \s 空白符[ \t\r\v\n\r\f]，包括空格、水平制表符、垂直制表符、换行符、回车符、换页符,
+                   \S 非空白符
+                -> . 通配符 [^\n\r\u2028\u2029] 表示几乎任意字符。换行符、回车符、行分隔符和段分隔符除外。
+                匹配任意字符：[\d\D]、[\w\W]、[\s\S] 、[^] 
+                    注：这里不可使用[.]匹配 --见下
+         */
+        //测试
+        //范围表示法
+        console.log("字符组测试：");
+        var str = "1224andaf";
+        var reg = /[0-9a-d]/g;
+        console.log(str.match(reg)); //["1", "2", "2", "4", "a", "d", "a"]
+        while (true) {
+            var isNull = reg.exec(str);
+            if (isNull === null) break;
+            else console.log(isNull); //["1", index: 0, input: "1224andaf", groups: undefined]...
+        }
+        var str = "123-a-bsd";
+        var reg = /[a-d1-3\-]/g;
+        console.log(str.match(reg)); //["1", "2", "3", "-", "a", "-", "b", "d"]
+        //排除字符串
+        var str = "zcnmdxd";
+        var reg = /[^d]/g;
+        console.log(str.match(reg)); //["z", "c", "n", "m", "x"]
+        //简写方式
+        var str = "1224andaf";
+        var reg = /\d/g;
+        console.log(str.match(reg)); //["1", "2", "2", "4"]
+        var reg = /\D/g;
+        console.log(str.match(reg)); //["a", "n", "d", "a", "f"]
+        var str = "abcd124\",\n";
+        var reg = /./g;
+        console.log(str.match(reg)); //["a", "b", "c", "d", "1", "2", "4", """, ","]
+        var reg = /[^]/g;
+        // var reg = /[\d\D]/g;
+        // var reg = /[\w\W]/g;
+        // var reg = /[\s\S]/g;
+        console.log(str.match(reg)); //["a", "b", "c", "d", "1", "2", "4", """, ",", "↵"]
+    </script>
+
+    <!-- 03量词 -->
+    <script>
+        /* 
+            举例："ababab" (ab){2,} 匹配结果 ababab
+                  (ab){1,} 匹配结果 ababab
+            1.简写：
+                ->{m,} 至少出现m次 
+                ->{m} 出现m次
+                ->? 等价于{0,1}
+                ->+ 等价于{1，}
+                ->* 等价于{0，}
+            2.贪婪匹配与惰性匹配
+                ->贪婪匹配 尽可能多的匹配 
+                    举例 m{2,5} 如果有5个m，就不会匹配2个
+                ->惰性匹配 尽可能少的匹配
+                    相反 如果有5个m，只会匹配2个
+            3.惰性量词
+                ->{m,n}?
+                ->{m,}?
+                ->??
+                ->+?
+                ->*?
+         */
+        //测试
+        //1.简写
+        console.log("量词测试：");
+        var str = "ababab";
+        var reg = /(ab){1}/g;
+        console.log(str.match(reg)); // ["ab", "ab", "ab"]
+        var reg = /(ab){1,}/g;
+        console.log(str.match(reg)); // ["ababab"]
+        var reg = /(ab)*/g;
+        console.log(str.match(reg)); // ["ababab", ""]
+        var reg = /(ab)?/g;
+        console.log(str.match(reg)); // ["ab", "ab", "ab", ""]
+        //2.贪婪匹配与惰性匹配
+        console.log("贪婪匹配与惰性匹配：");
+        var str = "123 1234 12345 123456";
+        var reg = /\d{2,5}/g;
+        console.log(str.match(reg)); //["123", "1234", "12345", "12345"]
+        var reg = /\d{2,5}?/g;
+        console.log(str.match(reg)); //["12", "12", "34", "12", "34", "12", "34", "56"]
+        //3.惰性量词
+        //会匹配位置（见第二章）
+        var str = "ababab"; //数组长6
+        var reg = /(ab){1,}/g;
+        console.log(str.match(reg)); //ababab
+        var reg = /(ab){1,}?/g;
+        console.log(str.match(reg)); //ab ab ab
+        var reg = /(ab){1,2}/g;
+        console.log(str.match(reg)); //abab ab
+        var reg = /(ab){1,2}?/g;
+        console.log(str.match(reg)); //ab ab ab
+        var reg = /(ab)?/g;
+        console.log(str.match(reg)); //ab ab ab ab ""
+        var reg = /(ab)??/g;
+        console.log(str.match(reg)); //"" "" "" "" "" "" ""
+        var reg = /(ab)+/g;
+        console.log(str.match(reg)); //ababab
+        var reg = /(ab)+?/g;
+        console.log(str.match(reg)); //ab ab ab
+        var reg = /(ab)*/g;
+        console.log(str.match(reg)); //ababab ""
+        var reg = /(ab)*?/g;
+        console.log(str.match(reg)); //"" "" "" "" "" "" "" （长度为7）
+    </script>
+
+    <!-- 04多选分支 -->
+    <script>
+        /* 
+            ->一个模式可以实现横向和纵向模糊匹配。而多选分支可以支持多个子模式任选其一。
+            ->具体形式如下：(p1|p2|p3)，其中 p1、p2 和 p3 是子模式，用 |（管道符）分隔，表示其中任何之一
+            ->注意：分支结构也是惰性的，即当前面的匹配上了，后面的就不再尝试了
+         */
+        var reg = /good|nice/g;
+        var str = "good idea,nice try!";
+        console.log(str.match(reg));//good nice
+        //注意：分支结构也是惰性的，即当前面的匹配上了，后面的就不再尝试了
+        var reg = /good|goodbye/g;
+        var str = "goodbye";
+        console.log(str.match(reg));//good
+        var reg = /goodbye|good/g;
+        var str = "goodbye";
+        console.log(str.match(reg));//goodbye
+    </script>
+
+    <!-- 05案例分析 -->
+    <script>
+        console.log("案例分析：");
+        /* 1.匹配：
+            #ffbbad
+            #Fc01DF
+            #FFF
+            #ffE
+        */
+        var reg = /#([a-zA-Z0-9]{3}|[a-zA-Z0-9]{6})/g;
+        var str = "#ff01ad #Fc01Df #FFE #ffE";
+        console.log(str.match(reg));//["#ff0", "#Fc0", "#FFE", "#ffE"]
+
+        /* 2. 匹配：23:59 02:07
+            ->疑问：分支结构也是惰性的，即当前面的匹配上了，后面的就不再尝试了
+                (0?[0-9]|[1-5][0-9]) 23:5  分支结构的惰性匹配造成的
+                ([1-5][0-9]|0?[0-9]) 23:59
+            ->正则中使用了 ^ 和 $，分别表示字符串开头和结尾。具体详细请参考第二章。(这里没用)
+         */
+        var reg = /(0?[0-9]|1[0-9]|2[0-3]):(0?[0-9]|[1-5][0-9])/g;//["23:5", "2:07", "22:00"]
+        var reg = /(0?[0-9]|1[0-9]|2[0-3]):([1-5][0-9]|0?[0-9])/g;//["23:59", "2:07", "22:00"]
+        var str = "23:59 2:07 22:00";
+        console.log(str.match(reg));//["23:59", "2:07", "22:00"]
+
+        /* 3.匹配日期：比如 yyyy-mm-dd 格式为例 
+            2020-10-23
+        */
+        var reg = /\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])/g;
+        var str = "2020-10-232018-09-032332017-02-01";
+        console.log(str.match(reg));//["2020-10-23", "2018-09-03", "2017-02-01"]
+
+        /* 4.匹配文件路径：
+            C:\Users\aaa\Desktop\Js_Learing-liaoxuefeng\资料\JavaScript正则表达式迷你书（1.1版）.pdf
+            ->其中括号表示其内部正则是一个整体。具体详细请参考第三章。
+         */
+        var reg = /[a-zA-Z]:\\([^\\ :*<>|"?\r\n/]+\\)*([^ \\:*<>|"?\r\n/]+)?/g;
+        var str = "C:\\Users\\aaa\\Desktop\\Js_Learing-liaoxuefeng\\资料\\JavaScript正则表达式迷你书（1.1版）.pdf C:\\Users\\aaa\\Desktop\\ C:\\";
+        console.log(str.match(reg));//["C:\Users\aaa\Desktop\Js_Learing-liaoxuefeng\资料\JavaScript正则表达式迷你书（1.1版）.pdf", "C:\Users\aaa\Desktop\", "C:\"]
+
+        /* 5.匹配id
+            <div id="container" class="main"></div> 提取id=...
+            ->正则优化：效率比较低，因为其匹配原理会涉及到“回溯”这个概念（这里也只是顺便提一下，第四章会详细说明）。
+        */
+        var regex = /id=".*"/g;//id="container" class="main" 贪婪匹配
+        var regex = /id=".*?"/g;//id="container" 惰性匹配
+        var reg = /id="[^"]*"/g;//id="container" 
+        var str = `<div id="container" class="main"></div>`;
+        console.log(str.match(reg));
+    </script>
+</body>
+
+</html>
